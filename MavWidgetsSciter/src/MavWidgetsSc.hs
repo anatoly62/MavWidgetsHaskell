@@ -5,25 +5,23 @@ import Graphics.Win32 hiding (messageBox, c_MessageBox,postQuitMessage,try)
 import System.Win32.Types hiding (try)
 import Foreign
 import Foreign.C.String
+import Foreign.C.Types
 import Control.Monad
-import Data.IORef
 import System.IO.Unsafe
+import Control.Exception
+import Data.IORef
 import Data.Maybe (fromMaybe)
-import SciterApi
 import Data.Foldable (foldl')
 import Data.List(findIndex)
-
+import Data.Char
 import Data.ByteString (ByteString,split,isPrefixOf)
 import qualified Data.ByteString as B
-
-import Data.Time.Clock.POSIX
-import Convert
-import Foreign.C.Types
-import Data.Time.Clock (utctDay)
 import Data.Time
-import Data.Char
-
-import Control.Exception
+import Data.Time.Clock.POSIX
+import Data.Time.Clock (utctDay)
+import Convert
+import SciterConstants
+import SciterApi
 
 type GuiPtr=Addr
 type WinPtr=HWND
@@ -93,7 +91,6 @@ message text= do
  return ()
 
 --CallBasks
-
 sciterMainCallBack::Ptr CallbackData->Addr->IO UINT
 sciterMainCallBack res addr=do
   r<- peek res
@@ -105,21 +102,21 @@ sciterCallBack res addr=do
   r<- peek res
   return 0  
 
-tableEvent::Addr->Addr->UINT->Addr->IO Bool
+tableEvent::Addr->GuiPtr->UINT->Addr->IO Bool
 tableEvent tag elem evtg param=do
-  when (evtg == 1) $ do
+  when (evtg == handleMouse) $ do
     cmd <- peekByteOff param 0 :: IO Word16
     trg <- peekByteOff param 4 :: IO (Ptr UINT)
     state <- peekByteOff param 24 :: IO Word16
-    if cmd == 3 && state == 1 then do
+    if cmd == mouseUp && state == mainMouseButton then do
       t<-sciterGetType $ castPtr trg
       n <- if t=="tr" then chCursor elem $ castPtr trg
            else if t=="td" then sciterGetParent ( castPtr trg) >>= chCursor elem else return (-1)
       when(n>=0) $ readIORef _tablesStore_ >>= callFun n
-    else if cmd == 3 && state ==2 then do
+    else if cmd == mouseUp && state ==propMouseButton then do
       n<- sciterGetParent ( castPtr trg) >>= chCursor elem
       readIORef _tablesStoreMenu_ >>=  callFun n
-    else when (cmd == 5) $ do
+    else when (cmd == mouseDblClick) $ do
       strIdx <- sciterGetAttribute elem "index"
       readIORef _tablesStoreDbl_ >>= callFun ( read strIdx)
   return False
@@ -141,9 +138,9 @@ tableEvent tag elem evtg param=do
         Nothing -> return ()
         Just fun -> when (n >= 0) $ fun $ fromIntegral n
 
-chEvent::Addr->Addr->UINT->Addr->IO Bool
+chEvent::Addr->GuiPtr->UINT->Addr->IO Bool
 chEvent tag elem evtg param=  tryEBool "Несподівана помилка : " $  do
-  when (evtg==256) $ do
+  when (evtg==handleBehaviorEvent) $ do
     cmd<-peekByteOff param 0 ::IO UINT
     src<-peekByteOff param 8 ::IO (Ptr UINT)
     res<-peekByteOff param 12 ::IO UINT
@@ -152,9 +149,9 @@ chEvent tag elem evtg param=  tryEBool "Несподівана помилка : 
       fromMaybe (return ()) $ lookup elem store
   return False
 
-cbEvent::Addr->Addr->UINT->Addr->IO Bool
+cbEvent::Addr->GuiPtr->UINT->Addr->IO Bool
 cbEvent tag elem evtg param=  tryEBool "Несподівана помилка : " $  do
-  when (evtg==256) $ do
+  when (evtg==handleBehaviorEvent) $ do
     cmd<-peekByteOff param 0 ::IO UINT
     src<-peekByteOff param 8 ::IO (Ptr UINT)
     res<-peekByteOff param 12 ::IO UINT
@@ -165,9 +162,9 @@ cbEvent tag elem evtg param=  tryEBool "Несподівана помилка : 
       fromMaybe (return ()) $ lookup elem store
   return False
   
-dateEvent::Addr->Addr->UINT->Addr->IO Bool
+dateEvent::Addr->GuiPtr->UINT->Addr->IO Bool
 dateEvent tag elem evtg param=  tryEBool "Несподівана помилка : " $  do
-  when (evtg==256) $ do
+  when (evtg==handleBehaviorEvent) $ do
     cmd<-peekByteOff param 0 ::IO UINT
     src<-peekByteOff param 8 ::IO (Ptr UINT)
     res<-peekByteOff param 12 ::IO UINT
@@ -176,9 +173,9 @@ dateEvent tag elem evtg param=  tryEBool "Несподівана помилка 
       fromMaybe (return ()) $ lookup elem store
   return False  
 
-btEvent::Addr->Addr->UINT->Addr->IO Bool
+btEvent::Addr->GuiPtr->UINT->Addr->IO Bool
 btEvent tag elem evtg param=do
-  when (evtg==256) $ do
+  when (evtg==handleBehaviorEvent) $ do
     cmd<-peekByteOff param 0 ::IO UINT
     res<-peekByteOff param 12 ::IO UINT
     when (res == 1 && cmd == 0) $ do
@@ -186,9 +183,9 @@ btEvent tag elem evtg param=do
       fromMaybe (return ()) $ lookup elem store
   return False
 
-flatBtEvent::Addr->Addr->UINT->Addr->IO Bool
+flatBtEvent::Addr->GuiPtr->UINT->Addr->IO Bool
 flatBtEvent tag elem evtg param=do
-  when (evtg==256) $ do
+  when (evtg==handleBehaviorEvent) $ do
     cmd<-peekByteOff param 0 ::IO UINT
     res<-peekByteOff param 12 ::IO UINT
     when (res == 1 && cmd == 0) $ do
@@ -196,9 +193,9 @@ flatBtEvent tag elem evtg param=do
       fromMaybe (return ()) $ lookup elem store
   return False
 
-textEvent::Addr->Addr->UINT->Addr->IO Bool
+textEvent::Addr->GuiPtr->UINT->Addr->IO Bool
 textEvent tag elem evtg param=do
-  when (evtg==2) $ do
+  when (evtg==handleKey) $ do
      cmd<-peekByteOff param 0 ::IO UINT
      code<-peekByteOff param 8 ::IO UINT
      when (cmd == 1) $ do
@@ -210,9 +207,9 @@ textEvent tag elem evtg param=do
          Just fun -> fun $ fromIntegral code
   return False
 
-menuEvent::Addr->Addr->UINT->Addr->IO Bool
+menuEvent::Addr->GuiPtr->UINT->Addr->IO Bool
 menuEvent tag elem evtg param=do
-  when (evtg==256) $ do
+  when (evtg==handleBehaviorEvent) $ do
     cmd<-peekByteOff param 0 ::IO UINT
     res<-peekByteOff param 12 ::IO UINT
     when (res == 0 && cmd == 128) $ do
@@ -221,7 +218,6 @@ menuEvent tag elem evtg param=do
   return False
 
 ---MavWidgets API
-
 checkError:: String->Either SomeException ()-> IO()
 checkError  textError result=
  case result of
@@ -245,26 +241,29 @@ tryE  err fun=(try  fun :: IO (Either SomeException ())) >>= checkError err
 tryEBool::String->IO Bool->IO Bool
 tryEBool  err fun=(try  fun :: IO (Either SomeException Bool)) >>= checkErrorBool err
 
-initGui::String->IO Addr
-initGui path=do
+initGui::String->Int->Int->IO (HWND, GuiPtr)
+initGui path width height=do
   apiPtr
   sciterClass<-sciterClassName
   windowTitle<-newCWString "Maint Sciter Window"
-  hwnd<-c_CreateWindowEx 0 sciterClass windowTitle wS_OVERLAPPEDWINDOW 100 100 800 500 nullPtr nullPtr nullPtr nullPtr
+  hwnd<-c_CreateWindowEx 0 sciterClass windowTitle wS_OVERLAPPEDWINDOW 100 100 width height nullPtr nullPtr nullPtr nullPtr
   wrap_callBack sciterMainCallBack  >>= sciterSetCallback hwnd
   res<-sciterLoadFile  hwnd path
   unless res $ error "parse file error " 
-  showWindow hwnd sW_SHOWNORMAL
-  sciterGetRoot  hwnd
+  --showWindow hwnd sW_SHOWNORMAL
+  root<-sciterGetRoot  hwnd  
+  return (hwnd,root)
+ 
+
   
-loadGui::String->Int->Int->IO (HWND, Addr)
+loadGui::String->Int->Int->IO (HWND, GuiPtr)
 loadGui path width height=do
   sciterClass<-sciterClassName
   windowTitle<-newCWString "Sciter Window"
   hwnd<-c_CreateWindowEx 0 sciterClass windowTitle wS_OVERLAPPEDWINDOW 100 100 width height nullPtr nullPtr nullPtr nullPtr
   wrap_callBack sciterCallBack  >>= sciterSetCallback hwnd
   sciterLoadFile  hwnd path
-  showWindow hwnd sW_SHOWNORMAL
+--  showWindow hwnd sW_SHOWNORMAL
   root<-sciterGetRoot  hwnd  
   return (hwnd,root)
 
@@ -279,151 +278,164 @@ loopGui  = allocaMessage $ \ msg ->
           pump
   in pump
 
-button::Addr->String->IO Addr
+button::GuiPtr->String->IO GuiPtr
 button root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
+  when (ptr==nullPtr) $ error "button nullPtr"
   sciterAttachEventHandler ptr btEvent 
   return ptr
 
-buttonOnClick:: Addr->IO ()->IO()
+buttonGetText::GuiPtr->IO ByteString
+buttonGetText =sciterGetStrValue
+
+buttontSetText::GuiPtr->ByteString->IO ()
+buttontSetText el val = sciterSetStrValue el val >>=checkSciterError "textSetText"
+
+buttonOnClick:: GuiPtr->IO ()->IO()
 buttonOnClick ptr fun  =  modifyIORef _buttonsStore_ $ (:) (ptr,fun)
 
-checkButton::Addr->String->IO Addr
+checkButton::GuiPtr->String->IO GuiPtr
 checkButton root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
+  when (ptr==nullPtr) $ error "checkButton nullPtr"
   sciterAttachEventHandler ptr chEvent 
   return ptr
 
-checkButtonIsChecked::Addr->IO Bool
+checkButtonIsChecked::GuiPtr->IO Bool
 checkButtonIsChecked ptr=do
   res<-sciterGetIntValue ptr
   return  $ res /= 0
   
-checkButtonChecked::Addr->Bool->IO ()
-checkButtonChecked ptr value=  sciterSetIntValue ptr (if value then 1 else 0) 2 >>=checkSciterError "checkButtonChecked"
+checkButtonCheck::GuiPtr->Bool->IO ()
+checkButtonCheck ptr value=  sciterSetIntValue ptr (if value then 1 else 0) 2 >>=checkSciterError "checkButtonChecked"
 
-checkButtonOnChange:: Addr->IO ()->IO()
+checkButtonOnChange:: GuiPtr->IO ()->IO()
 checkButtonOnChange ptr fun  =  modifyIORef _checksStore_ $ (:) (ptr,fun)
 
-combo::Addr->String->IO Addr
+combo::GuiPtr->String->IO GuiPtr
 combo root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
+  when (ptr==nullPtr) $ error "combo nullPtr"
   sciterSetAttribute ptr "index" "0"
   sciterAttachEventHandler ptr cbEvent
   return ptr
 
-comboOnChange:: Addr->IO ()->IO()
+comboOnChange:: GuiPtr->IO ()->IO()
 comboOnChange ptr fun  =  modifyIORef _combosStore_ $ (:) (ptr,fun)
 
-comboGetText::Addr->IO ByteString
+comboGetText::GuiPtr->IO ByteString
 comboGetText =sciterGetStrValue
 
-comboSetText::Addr->ByteString->IO UINT
+comboSetText::GuiPtr->ByteString->IO UINT
 comboSetText =sciterSetStrValue
 
-comboGetIndex::Addr->IO Int
+comboGetIndex::GuiPtr->IO Int
 comboGetIndex addr=do
   r<-sciterGetAttribute addr "index"
   return $ read r
 
-comboSetIndex::Addr->Int->IO ()
+comboSetIndex::GuiPtr->Int->IO ()
 comboSetIndex el n=do
   p<-sciterGetNthChild el 0
   cnt <-sciterGetClildCount p
-  sciterSetAttribute el "index" $ show n
   if n<fromIntegral cnt then do
     row<-sciterGetNthChild p $ fromIntegral n
     val<-sciterGetStrValue row
     r<-sciterSetStrValue el  val
+    sciterUpdateElem el True    
     when(r==0) $ sciterSetAttribute el "index" ( show n) >>= checkSciterError "end comboSetIndex"
   else error "comboSetIndexError"
   
-comboFill::Addr->[ByteString]->IO ()
+comboFill::GuiPtr->[ByteString]->IO ()
 comboFill  ptr lst= do
   popup<-sciterGetNthChild ptr 0
   res<-sciterSetHtml  popup $ foldl' (\r el-> r <> "<option>" <> el <> "</option>") "" lst
   when(res/=0) $ error "comboFill"
   comboSetIndex ptr 0
-  
-comboGetItems::Addr->IO[ByteString]
+ 
+comboGetItems::GuiPtr->IO[ByteString]
 comboGetItems ptr=do
   popUp<-sciterGetNthChild ptr 0
   cnt<-sciterGetClildCount popUp
   mapM (sciterGetNthChild popUp >=> sciterGetStrValue ) [0..cnt-1]
 
-comboSearch::Addr->[ByteString]->ByteString->Int->IO()
+comboSearch::GuiPtr->[ByteString]->ByteString->Int->IO()
 comboSearch ptr lst str  n = forM_ (findIndex (\el->doublePrefixOf str el  n) lst) $ comboSetIndex ptr
   
-datePick::Addr->String->IO Addr
+datePick::GuiPtr->String->IO GuiPtr
 datePick root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
+  when (ptr==nullPtr) $ error "datePisk nullPtr"
   sciterAttachEventHandler ptr dateEvent
   return ptr
 
-datePickGetText::Addr->IO ByteString
+datePickGetText::GuiPtr->IO ByteString
 datePickGetText ptr  =do
   r<-sciterGetIn64Value ptr
   let delta=(r-116444628000000000)`div` 10000000
   return $ fromStr $ show $ utctDay  $ posixSecondsToUTCTime $ fromIntegral delta
   
-datePickSetText::Addr->ByteString->IO ()
+datePickSetText::GuiPtr->ByteString->IO ()
 datePickSetText ptr val =do
 --  print "start datePickSetText" 
   let ut=read $  toStr val ++" 00:00:00.000000 UTC"::UTCTime
   let sec= round $ utcTimeToPOSIXSeconds ut
   sciterSetInt64Value ptr ( 116444628000000000 + sec * 10000000+864000000000) 6 >>=checkSciterError "end datePickSetText"
 
-datePickOnChange:: Addr->IO ()->IO()
+datePickOnChange:: GuiPtr->IO ()->IO()
 datePickOnChange ptr fun  =  modifyIORef _datesStore_ $ (:) (ptr,fun)
 
-flatButton::Addr->String->IO Addr
+flatButton::GuiPtr->String->IO GuiPtr
 flatButton root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
+  when (ptr==nullPtr) $ error "flatButton nullPtr"
   sciterAttachEventHandler ptr flatBtEvent
   return ptr
 
-flatButtonOnClick:: Addr->IO ()->IO()
+flatButtonOnClick:: GuiPtr->IO ()->IO()
 flatButtonOnClick ptr fun  =  modifyIORef _flatButtonsStore_ $ (:) (ptr,fun)
 
-menuItem::Addr->String->IO Addr
+menuItem::GuiPtr->String->IO GuiPtr
 menuItem root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
+  when (ptr==nullPtr) $ error "menuItem nullPtr"
   sciterAttachEventHandler ptr menuEvent 
   return ptr
 
-menuItemOnClick:: Addr->IO ()->IO()
+menuItemOnClick:: GuiPtr->IO ()->IO()
 menuItemOnClick ptr fun  =  modifyIORef _menuItemsStore_ $ (:) (ptr,fun)
 
-menu::Addr->String->IO Addr
+menu::GuiPtr->String->IO GuiPtr
 menu root css =sciterSelectElement  root $ "#" ++ css
 
-menuShow::Addr->Addr->IO ()
+menuShow::GuiPtr->GuiPtr->IO ()
 menuShow menu parent=do
   sciterShowPopUp menu parent
   return()
 
-table::Addr->String->IO Addr
+table::GuiPtr->String->IO GuiPtr
 table root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
+  when (ptr==nullPtr) $ error "table nullPtr"
   sciterSetAttribute ptr "index" "-1"
   sciterAttachEventHandler ptr tableEvent
   return ptr
 
-tableOnClick:: Addr->(Int->IO())->IO()
+tableOnClick:: GuiPtr->(Int->IO())->IO()
 tableOnClick ptr fun  =  modifyIORef _tablesStore_ $ (:) (ptr,fun)
 
-tableOnDblClick:: Addr->(Int->IO())->IO()
+tableOnDblClick:: GuiPtr->(Int->IO())->IO()
 tableOnDblClick ptr fun  =  modifyIORef _tablesStoreDbl_ $ (:) (ptr,fun)
 
-tableOnMenu:: Addr->(Int->IO())->IO()
+tableOnMenu:: GuiPtr->(Int->IO())->IO()
 tableOnMenu ptr fun  =  modifyIORef _tablesStoreMenu_ $ (:) (ptr,fun)
 
-tableGetIndex::Addr->IO Int
+tableGetIndex::GuiPtr->IO Int
 tableGetIndex tbl=do
   strIdx<-sciterGetAttribute tbl "index"
   return $ read strIdx::IO Int
   
-tableSetIndex::Addr->Int->IO()
+tableSetIndex::GuiPtr->Int->IO()
 tableSetIndex tbl n=do
   strIdx<-sciterGetAttribute tbl "index"
   let idx=read strIdx::Int
@@ -439,8 +451,7 @@ tableSetIndex tbl n=do
       sciterSetAttribute tbl "index" ( show n) >>=checkSciterError "end tableSetIndex"
   else   sciterSetAttribute tbl "index" "-1"  >>=checkSciterError "end tableSetIndex"
 
-
-tableScroll::Addr->IO()
+tableScroll::GuiPtr->IO()
 tableScroll tbl=do
   strIdx<-sciterGetAttribute tbl "index"
   when(strIdx/="-1") $ do
@@ -448,13 +459,13 @@ tableScroll tbl=do
     row<-sciterGetNthChild tbl idx
     sciterScrollToView row >>=checkSciterError "end tableScroll"
     
-tableScrollTo::Addr->Int->IO()
+tableScrollTo::GuiPtr->Int->IO()
 tableScrollTo tbl idx=
   when(idx>0) $ do
     row<-sciterGetNthChild tbl $ fromIntegral idx
     sciterScrollToView row >>=checkSciterError "end tableScroll"    
 
-tableAddRow::Addr->c->[ c->  ByteString]->IO ()
+tableAddRow::GuiPtr->c->[ c->  ByteString]->IO ()
 tableAddRow ptr item fns=do
   let rowHtml=rowFill item fns
   cnt<-sciterGetClildCount ptr
@@ -464,7 +475,7 @@ tableAddRow ptr item fns=do
   tableSetIndex ptr $ fromIntegral cnt
   sciterScrollToView row >>=checkSciterError "tableAddRow"
 
-tableAddRowM::Addr->c->[ c-> IO ByteString]->IO ()
+tableAddRowM::GuiPtr->c->[ c-> IO ByteString]->IO ()
 tableAddRowM ptr item fns=do
   rowHtml<-rowFillM item fns
   cnt<-sciterGetClildCount ptr
@@ -474,7 +485,7 @@ tableAddRowM ptr item fns=do
   tableSetIndex ptr $ fromIntegral cnt
   sciterScrollToView row >>=checkSciterError "tableAddRowM"
 
-tableChangeRow::Addr->c->[ c-> ByteString]->IO ()
+tableChangeRow::GuiPtr->c->[ c-> ByteString]->IO ()
 tableChangeRow ptr item fns=do
   let rowHtml=rowFill item fns
   strIdx<-sciterGetAttribute ptr "index"
@@ -482,7 +493,7 @@ tableChangeRow ptr item fns=do
   ptr'<-sciterGetNthChild ptr $ fromIntegral idx
   sciterSetHtml ptr' rowHtml >>=checkSciterError "tableChangeRow"
 
-tableChangeRowM::Addr->c->[ c-> IO ByteString]->IO ()
+tableChangeRowM::GuiPtr->c->[ c-> IO ByteString]->IO ()
 tableChangeRowM ptr item fns=do
   rowHtml<-rowFillM item fns
   strIdx<-sciterGetAttribute ptr "index"
@@ -490,7 +501,7 @@ tableChangeRowM ptr item fns=do
   ptr'<-sciterGetNthChild ptr $ fromIntegral idx
   sciterSetHtml ptr' rowHtml >>=checkSciterError "tableChangeRowM"
 
-tableDeleteRow::Addr->IO ()
+tableDeleteRow::GuiPtr->IO ()
 tableDeleteRow ptr=do
   strIdx<-sciterGetAttribute ptr "index"
   let n= read strIdx::Int
@@ -501,7 +512,7 @@ tableDeleteRow ptr=do
 rowFill:: c->[c->ByteString]->  ByteString
 rowFill item = foldl' (\r f-> r <> "<td>" <>  f item <> "</td>") B.empty
 
-tableFill::Addr->[c]->[ c-> ByteString]-> IO UINT
+tableFill::GuiPtr->[c]->[ c-> ByteString]-> IO UINT
 tableFill  ptr store fns=do
   tableSetIndex ptr (-1)
   sciterSetHtml  ptr $ foldl' (\r it-> r <> "<tr>" <> rowFill it fns <> "</tr>") B.empty store 
@@ -511,7 +522,7 @@ rowFillM item = foldM (\r f->do
                               s<-f item
                               return $! r <> "<td>" <>  s <> "</td>") B.empty 
 
-tableFillM::Addr->[c]->[ c->IO ByteString]-> IO ()
+tableFillM::GuiPtr->[c]->[ c->IO ByteString]-> IO ()
 tableFillM  ptr store fns=do
   tableSetIndex ptr (-1)
   str<-foldM (\r it->do
@@ -519,42 +530,47 @@ tableFillM  ptr store fns=do
                        return $! r <> "<tr>" <> s <> "</tr>") B.empty store
   sciterSetHtml  ptr str >>=checkSciterError "end tableFillM"
 
-
-tableGetRow::Addr->Word32->IO Addr
+tableGetRow::GuiPtr->Word32->IO GuiPtr
 tableGetRow =sciterGetNthChild
 
-tableSetHeaderText::Addr->Int->ByteString->IO()
+tableSetHeaderText::GuiPtr->Int->ByteString->IO()
 tableSetHeaderText ptr n s=do
   row<-sciterGetNthChild ptr 0
   cell<-sciterGetNthChild row $ fromIntegral n
   sciterSetHtml cell s>>=checkSciterError "tableSetHeaderText"
   
-tableSearch::Addr->[ByteString]->ByteString->Int->IO()
+tableSearch::GuiPtr->[ByteString]->ByteString->Int->IO()
 tableSearch ptr lst str  n = do
   let idx=findIndex (\el->doublePrefixOf str el  n) lst 
   forM_ idx $ tableSetIndex ptr
   forM_ idx $ tableScrollTo ptr
    
-text::Addr->String->IO Addr
+text::GuiPtr->String->IO GuiPtr
 text root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
+  when (ptr==nullPtr) $ error "text nullPtr"
   sciterAttachEventHandler ptr textEvent
   return ptr  
 
-textGetText::Addr->IO ByteString
+textGetText::GuiPtr->IO ByteString
 textGetText =sciterGetStrValue
  
-textSetText::Addr->ByteString->IO ()
+textSetText::GuiPtr->ByteString->IO ()
 textSetText el val = sciterSetStrValue el val >>=checkSciterError "textSetText"
 
-textSelectAll::Addr->IO()
+textSelectAll::GuiPtr->IO()
 textSelectAll ptr=  sciterScriptMethod ptr "doSelectAll" >>=checkSciterError "textSelectAll"
 
-textOnChange:: Addr->IO ()->IO()
+textOnChange:: GuiPtr->IO ()->IO()
 textOnChange ptr fun  =  modifyIORef _textsStore_ $ (:) (ptr,fun)
 
-textOnKey:: Addr->(Int->IO())->IO()
+textOnKey:: GuiPtr->(Int->IO())->IO()
 textOnKey ptr fun  =  modifyIORef _textsStore2_ $ (:) (ptr,fun)
+
+windowShow::HWND->IO()
+windowShow hwnd=do
+  showWindow hwnd sW_SHOWNORMAL
+  return()
 
 windowDestroy::HWND->IO() 
 windowDestroy =closeWindow
@@ -578,17 +594,17 @@ doublePrefixOf s elem  n  =
     (2,2)->head lst `isPrefixOf` head list && (lst !! 1) `isPrefixOf` (list !! 1)
     (_,_)->False
 
-widgetSetFocus::Addr->IO()
+widgetSetFocus::GuiPtr->IO()
 widgetSetFocus ptr=  sciterSetState ptr 0x00000008 0 False >>=checkSciterError "end widgetSetFocus"
 
-widgetEnable::Addr->IO()
+widgetEnable::GuiPtr->IO()
 widgetEnable ptr= sciterSetState ptr 0 0x00000080 False >>=checkSciterError "widgetEnable"
 
-widgetDisable::Addr->IO()
+widgetDisable::GuiPtr->IO()
 widgetDisable ptr= sciterSetState ptr 0x00000080 0 False >>=checkSciterError "widgetDisable"
 
-widgetShow::Addr->IO()
+widgetShow::GuiPtr->IO()
 widgetShow ptr= sciterSetStyleAttribute  ptr "display" "block" >>=checkSciterError "widgetShow"
 
-widgetHide::Addr->IO()
+widgetHide::GuiPtr->IO()
 widgetHide ptr=  sciterSetStyleAttribute  ptr "display" "none"  >>=checkSciterError "widgetHide"
