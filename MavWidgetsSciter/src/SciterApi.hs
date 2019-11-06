@@ -11,7 +11,7 @@ import System.IO.Unsafe
 import Data.Maybe (fromMaybe)
 import Data.ByteString (ByteString,useAsCString)
 import qualified Data.ByteString as B(length)
-
+import SciterConstants
 import Convert
 
 data Fake
@@ -46,6 +46,7 @@ type TNthElement=Addr->UINT->Ptr Addr->IO UINT
 type TElemNew=CString->CWString->Ptr Addr->IO UINT
 type TElemInsert=Addr->Addr->UINT->IO UINT
 type TElemDelete=Addr->IO UINT
+type TElemUpdate=Addr->Bool->IO UINT
 type TElemIndex=Addr->Ptr UINT->IO UINT
 type TElemState=Addr->UINT->UINT->Bool->IO UINT
 type TElemType=Addr->Ptr CString->IO UINT
@@ -89,6 +90,7 @@ foreign import stdcall "dynamic" mkSciterGetAttribute:: FunPtr TElemAttrGetter -
 foreign import stdcall "dynamic" mkSciterCreateElem:: FunPtr TElemNew -> TElemNew
 foreign import stdcall "dynamic" mkSciterInsertElem:: FunPtr TElemInsert -> TElemInsert
 foreign import stdcall "dynamic" mkSciterDeleteElem:: FunPtr TElemDelete-> TElemDelete
+foreign import stdcall "dynamic" mkSciterUpdateElem:: FunPtr TElemUpdate-> TElemUpdate
 foreign import stdcall "dynamic" mkSciterGetParent:: FunPtr TElement -> TElement
 foreign import stdcall "dynamic" mkSciterGetNthChild:: FunPtr TNthElement -> TNthElement
 foreign import stdcall "dynamic" mkSciterGetIndex:: FunPtr TElemIndex -> TElemIndex
@@ -114,18 +116,15 @@ apiStore :: IORef Addr
 {-# NOINLINE apiStore #-}
 apiStore = unsafePerformIO (newIORef nullPtr)
 
-ptrLen=4
-
 apiPtr::IO Addr
 apiPtr =do
    oleInitialize nullPtr
-   h<-loadLibrary "sciter.dll"
+   h<-loadLibrary dllName
    f<-getProcAddress (castPtr h) "SciterAPI"
    api<-myFun $ castPtrToFunPtr f
    writeIORef apiStore api
    return api
 
-----Sciter Api Function ---------------------------------------------------------------------------------
 sciterClassName::IO CWString
 sciterClassName = do
  addr<-readIORef apiStore
@@ -134,106 +133,113 @@ sciterClassName = do
 sciterLoadFile::HWND->String->IO Bool
 sciterLoadFile  w path = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (7*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` ( numSciterLoadFile*ptrLen)
   newCWString path >>= mkSciterLoadFile ptr w
 
 sciterSetCallback::HWND-> FunPtr FCallback->IO UINT
 sciterSetCallback   w fn = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (9*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterSetCallback*ptrLen)
   mkSciterSetCallback ptr w fn  addr
   
 sciterGetRoot::HWND->IO Addr
 sciterGetRoot  w = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (33*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetRootElement*ptrLen)
   alloca $ \mem->do
     res<-mkSciterGetRootElement ptr  w mem
-    if res==0 then peek mem else error "sciterGetRoot"
+    if res==0 then peek mem else error $ "sciterGetRoot  return "++ show res
 
 sciterGetParent::Addr->IO Addr
 sciterGetParent  elem = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (38*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetParent*ptrLen)
   alloca $ \mem->do
     res<-mkSciterGetParent ptr  elem mem
-    if res==0 then peek mem else error "sciterGetParent"
+    if res==0 then peek mem else error $ "sciterGetParent  return "++ show res
 
 sciterGetNthChild::Addr->UINT->IO Addr
 sciterGetNthChild  elem n = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (37*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetNthChild*ptrLen)
   alloca $ \mem->do
     res<-mkSciterGetNthChild ptr  elem  n mem
-    if res==0 then peek mem else error "sciterGetNthChild"
+    if res==0 then peek mem else error $ "sciterGetNthChild return "++ show res
 
 sciterGetIndex::Addr->IO UINT
 sciterGetIndex  elem  = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (48*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetIndex*ptrLen)
   alloca $ \mem->do
     res<-mkSciterGetIndex ptr  elem   mem
-    if res==0 then peek mem else error "sciterGetIndex"
+    if res==0 then peek mem else error $ "sciterGetIndex return "++ show res
     
 sciterGetClildCount::Addr->IO UINT
 sciterGetClildCount  elem  = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (36*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetCount*ptrLen)
   alloca $ \mem->do
     res<-mkSciterGetCount ptr  elem   mem
-    if res==0 then peek mem else error "sciterGetCount"
+    if res==0 then peek mem else error $ "sciterGetCount  return "++ show res
 
 sciterGetType::Addr->IO String
 sciterGetType  elem  = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (49*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetType*ptrLen)
   alloca $ \mem->do
     res<-mkSciterGetType ptr  elem   mem
-    if res==0 then  peek mem >>= peekCString else error "sciterGetType"
+    if res==0 then  peek mem >>= peekCString else error  $ "sciterGetType return "++ show res
     
 sciterCreateElem::String->IO Addr
 sciterCreateElem name=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (73*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterCreateElem*ptrLen)
   name'<-newCString name
   alloca $ \mem->do
       res<-mkSciterCreateElem ptr  name' nullPtr   mem
-      when (res/=0) $ error "sciterCreateElem"
+      when (res/=0) $ error $ "sciterCreateElem return "++ show res
       peek mem 
       
 sciterInsertElem::Addr->Addr->UINT->IO ()
 sciterInsertElem elem parent index=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (75*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterInsertElem*ptrLen)
   res<-mkSciterInsertElem  ptr elem parent index
-  when (res/=0) $ error "sciterInsertElem"
+  when (res/=0) $ error  $"sciterInsertElem return "++ show res
 
 sciterShowPopUp::Addr->Addr->IO ()
 sciterShowPopUp elem parent =do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (68*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterShowPopup*ptrLen)
   res<-mkSciterInsertElem  ptr elem parent 8
-  when (res/=0) $ error "sciterShowPopUp"
+  when (res/=0) $ error $ "sciterShowPopUp return "++ show res
   
 sciterDeleteElem::Addr->IO UINT
 sciterDeleteElem elem =do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (77*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterDeleteElem*ptrLen)
   res<-mkSciterDeleteElem  ptr elem
-  if res==0 then return 0 else error "sciterDeleteElem"
+  if res==0 then return 0 else  error $ "sciterDeleteElem return "++ show res
+  
+sciterUpdateElem::Addr->Bool->IO UINT
+sciterUpdateElem elem isForse=do
+   addr<-readIORef apiStore
+   ptr <- peek  $ addr  `plusPtr` (numSciterUpdateElem*ptrLen)
+   res<-mkSciterUpdateElem  ptr elem isForse
+   if res==0 then return 0 else  error $ "sciterUpdateElem return "++ show res      
   
 sciterScrollToView::Addr->IO UINT
 sciterScrollToView elem=do  
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (54*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterScrollToView*ptrLen)
   res<-mkSciterScrollToView ptr elem 0
-  if res==0 then return 0 else error "sciterScrollToView"
+  if res==0 then return 0 else error $ "sciterScrollToView return "++ show res
            
 sciterGetStrValue::Addr->IO ByteString
 sciterGetStrValue  elem  = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (102*ptrLen)
-  ptr' <- peek  $ addr  `plusPtr` (133*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetValue*ptrLen)
+  ptr' <- peek  $ addr  `plusPtr` (numValueStringData*ptrLen)
   alloca $ \mem->do
     res<-mkSciterGetValue ptr  elem   mem
     mr<-peek mem
@@ -247,8 +253,8 @@ sciterGetStrValue  elem  = do
 sciterGetIntValue::Addr->IO Int
 sciterGetIntValue  elem  = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (102*ptrLen)
-  ptr' <- peek  $ addr  `plusPtr` (135*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetValue*ptrLen)
+  ptr' <- peek  $ addr  `plusPtr` (numValueIntData*ptrLen)
   alloca $ \mem->do
     res<-mkSciterGetValue ptr  elem   mem
     when (res/=0) $ error  $ "mkSciterGetValue return " ++ show res
@@ -260,8 +266,8 @@ sciterGetIntValue  elem  = do
 sciterGetIn64Value::Addr->IO Word64
 sciterGetIn64Value  elem  = do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (102*ptrLen)
-  ptr' <- peek  $ addr  `plusPtr` (137*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetValue*ptrLen)
+  ptr' <- peek  $ addr  `plusPtr` (numValueInt64Data*ptrLen)
   alloca $ \mem->do
     res<-mkSciterGetValue ptr  elem   mem
     when (res/=0) $ error  $ "mkSciterGetValue return " ++ show res
@@ -273,66 +279,66 @@ sciterGetIn64Value  elem  = do
 sciterSetStrValue::Addr->ByteString->IO UINT
 sciterSetStrValue el value=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (103*ptrLen)
-  ptr' <- peek  $ addr  `plusPtr` (151*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterSetValue*ptrLen)
+  ptr' <- peek  $ addr  `plusPtr` (numValueFromString*ptrLen)
   let value'=toStr value
   let l= length value'
   str<-newCWString value'
   alloca $ \mem ->do
     res<-mkValueFromString ptr' mem str  (fromIntegral l) 0
-    when (res/=0) $ error "sciterSetStrValue0"
+    when (res/=0) $ error $ "sciterSetStrValue0 return "++ show res
     r<-mkSciterSetValue ptr el mem
-    when (r/=0) $ error "error SetStrValue1"
+    when (r/=0) $ error  $"error SetStrValue1 return "++ show res
     return r
 
 sciterSetInt64Value::Addr->Word64->UINT->IO UINT
 sciterSetInt64Value el value tp=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (103*ptrLen)
-  ptr' <- peek  $ addr  `plusPtr` (138*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterSetValue*ptrLen)
+  ptr' <- peek  $ addr  `plusPtr` (numValueInt64DataSet*ptrLen)
   alloca $ \mem ->do
     res<-mkValueInt64DataSet ptr' mem value  tp 0
-    when (res/=0) $ error "sciterSetInt64Value0"
+    when (res/=0) $ error $ "sciterSetInt64Value0 return "++ show res
     res<-mkSciterSetValue ptr el mem
-    if res==0 then return 0 else error "sciterSetInt64Value1"
+    if res==0 then return 0 else error  $ "sciterSetInt64Value1 return "++ show res
 
 sciterSetIntValue::Addr->Int->UINT->IO UINT
 sciterSetIntValue el value tp=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (103*ptrLen)
-  ptr' <- peek  $ addr  `plusPtr` (136*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterSetValue*ptrLen)
+  ptr' <- peek  $ addr  `plusPtr` (numValueIntDataSet*ptrLen)
   alloca $ \mem ->do
     res<-mkValueIntDataSet ptr' mem value  tp 0
-    when (res/=0) $ error "sciterSetIntValue0"
+    when (res/=0) $ error $ "sciterSetIntValue0  return "++ show res
     res<-mkSciterSetValue ptr el mem
-    if res==0 then return 0 else error "sciterSetIntValue1"
+    if res==0 then return 0 else error $ "sciterSetIntValue1  return "++ show res
 
 sciterGetText::Addr->IO String
 sciterGetText elem  =do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (40*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetText*ptrLen)
   store <- newIORef nullPtr
   let callbackFun attr len param =  writeIORef store attr
   cfn <- wrap_elem_attr callbackFun
   res<-mkSciterGetText ptr elem  cfn nullPtr
-  when (res/=0) $ error "sciterGetText"
+  when (res/=0) $ error $ "sciterGetText  return "++show res
   readIORef store >>=  peekCWString
     
 sciterSetText::Addr->String->IO UINT
 sciterSetText el text=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (41*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterSetText*ptrLen)
   value<-newCWString text
   let l= length text
   res<-mkSciterSetText ptr el  value  (fromIntegral l)
-  if res==0 then return 0 else error "sciterSetText"
+  if res==0 then return 0 else error $ "sciterSetText  return "++show res
 
 sciterSetHtml::Addr->ByteString->IO UINT
 sciterSetHtml el value=do
  addr<-readIORef apiStore
- ptr <- peek  $ addr  `plusPtr` (65*ptrLen)
+ ptr <- peek  $ addr  `plusPtr` (numSciterSetHtml*ptrLen)
  res<-useAsCString value $ \cs->  mkSciterSetHtml ptr el  cs  (fromIntegral (B.length value ))  0
- if res==0 then return 0 else error "sciterSetHtml"
+ if res==0 then return 0 else error $ "sciterSetHtml return "++show res
 
 sciterSelectElement::Addr->String->IO Addr
 sciterSelectElement  root css  = do
@@ -342,23 +348,23 @@ sciterSelectElement  root css  = do
   let callbackFun el param=do
         writeIORef store el
         return True
-  ptr <- peek $ addr `plusPtr` (62*ptrLen)
+  ptr <- peek $ addr `plusPtr` (numSciterSelectElement*ptrLen)
   cfn <- wrap_element callbackFun
   res<-mkSciterSelectElement ptr root css' cfn nullPtr
-  if res==0 then readIORef store else error "sciterSelectElement"
+  if res==0 then readIORef store else error $ "sciterSelectElement  return "++show res
 
 sciterAttachEventHandler::Addr->FElemEvent->IO UINT
 sciterAttachEventHandler  elem fn =do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (80*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterAttachEventHandler*ptrLen)
   cFn <- wrap_elem_event fn
   res<-mkSciterAttachEventHandler ptr elem cFn nullPtr
-  if res==0 then return 0 else error "sciterAttachEventHandler"
+  if res==0 then return 0 else error $ "sciterAttachEventHandler return "++show res
   
 sciterAttachWindowEventHandler::HWND->FElemEvent->IO UINT
 sciterAttachWindowEventHandler  elem fn =do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (81*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterAttachWindowEventHandler*ptrLen)
   cFn <- wrap_elem_event fn
   res<-mkSciterAttachWindowEventHandler ptr elem cFn nullPtr  0xFFFF
   if res==0 then return 0 else error $ "sciterAttachWindowEventHandler return " ++ show res 
@@ -366,57 +372,59 @@ sciterAttachWindowEventHandler  elem fn =do
 sciterGetAttribute::Addr->String->IO String
 sciterGetAttribute elem  name =do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (45*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetAttribute*ptrLen)
   name'<-newCString name
   store <- newIORef nullPtr
   let callbackFun attr len param = writeIORef store attr
   cfn <- wrap_elem_attr callbackFun
   res<-mkSciterGetAttribute ptr elem name' cfn nullPtr
-  when (res/=0) $ error "sciterGetAttribute"
-  readIORef store >>=  peekCWString
+  when (res/=0) $ error $ "sciterGetAttribute return "++ show res
+  cPtr<-readIORef store
+  if cPtr==nullPtr then error "nullPtr sciterGetAttribute " else peekCWString cPtr
 
 sciterSetAttribute::Addr->String->String->IO UINT
 sciterSetAttribute elem  name value=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (46*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterSetAttribute*ptrLen)
   name'<-newCString name
   value'<-newCWString value
   res<-mkSciterSetAttribute ptr elem name' value'
-  if res==0 then return 0 else error "sciterSetAttribute"
+  if res==0 then return 0 else error $ "sciterSetAttribute return "++show res
 
 sciterGetStyleAttribute::Addr->String->IO String
 sciterGetStyleAttribute elem attr  =do
   name<-newCString attr
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (51*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterGetStyle*ptrLen)
   store <- newIORef nullPtr
   let callbackFun attr len param =  writeIORef store attr
   cfn <- wrap_elem_attr callbackFun
   res<-mkSciterGetStyle ptr elem  name cfn nullPtr
-  when (res/=0) $ error "sciterGetStyle"
-  readIORef store >>=  peekCWString
+  when (res/=0) $ error  $ "sciterGetStyle return "++show res
+  cPtr<-readIORef store
+  if cPtr==nullPtr then error "nullPtr sciterGetStyleAttribute" else peekCWString cPtr
 
 sciterSetStyleAttribute::Addr->String->String->IO UINT
 sciterSetStyleAttribute elem  name value=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (52*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterSetStyle*ptrLen)
   name'<-newCString name
   value'<-newCWString value
   res<-mkSciterSetAttribute ptr elem name' value'
-  if res==0 then return 0 else error "sciterSetStyleAttribute"
+  if res==0 then return 0 else error $ "sciterSetStyleAttribute return "++show res
 
 sciterSetState::Addr->UINT->UINT->Bool->IO UINT
 sciterSetState elem setBits clearBits upDate=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (72*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterSetState*ptrLen)
   res<-mkSciterSetState ptr  elem setBits clearBits upDate
-  if res==0 then return 0 else error "sciterSetState"
+  if res==0 then return 0 else error  $ "sciterSetState return "++show res
 
 sciterScriptMethod::Addr->String-> IO UINT
 sciterScriptMethod elem name=do
   addr<-readIORef apiStore
-  ptr <- peek  $ addr  `plusPtr` (97*ptrLen)
+  ptr <- peek  $ addr  `plusPtr` (numSciterScriptMethod*ptrLen)
   name'<-newCString name
   res<-mkSciterScriptMethod ptr elem name' nullPtr 0 nullPtr
-  if res==0 then return 0 else error "sciterScriptMethod"
-
+  if res==0 then return 0 else error $ "sciterScriptMethod return "++ show res
+  
