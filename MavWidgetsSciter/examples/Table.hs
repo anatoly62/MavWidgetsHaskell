@@ -20,7 +20,7 @@ contactsList=[Contact{contactId=1,contactName="Ann",contactGender=1},
 {-# NOINLINE contactsStore #-}
 contactsStore = unsafePerformIO (newIORef contactsList) 
 
-mainT= tryE "Load error" $ do
+main= tryE "Load error" $ do
   (mainWindow,root)<-initGui "file://D:/sciter/table.html" 500 350
   windowShow mainWindow
   btAdd <- button root "btAdd"
