@@ -4,11 +4,11 @@ used. There are also MavWidgets for PureScript to be used in browser
 applications; minimal code modifications are required to compensate
 PureScript and Haskell incompatibility.
 
-#Article
+# Article
 
 http://mav.vn.ua/#article(10)
 
-#Live Demo
+# Live Demo
 
 http://mav.vn.ua/ru_prj.html
 
