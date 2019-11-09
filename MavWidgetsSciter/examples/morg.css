@@ -1,0 +1,814 @@
+.container {
+  display: table;
+}
+.row {
+  display: table-row;
+}
+.col {
+  display: table-cell;  
+}
+
+.title {
+	background: #eef0fc;
+	color: black;
+	font-size: 18px;
+	height: 26px;
+	text-align: left;
+	margin-left:-10px;
+	position:relative;
+}
+
+.titleText{
+  position: relative;
+}
+
+
+.titleMaxButton{
+  position: relative;
+  left: 0px;
+  border-bottom: 1px solid #888888;
+  border-right: 1px solid #888888;
+  
+}
+
+.titleCloseButton{
+  position: absolute;
+  right:45px;
+}
+
+.window {
+	position: absolute;
+	padding: 0px 0px 0px 10px;	
+	border: 2px solid #888888;
+	background: #fefefe;
+	display: none;
+}
+
+
+
+.contextMenu {
+	position: absolute;
+	background: white;
+	top: 200px;
+	left: 20px;
+	width: 150px;
+	height: 100px;
+	border: 1px solid gray;
+	padding: 2px 4px 2px 4px;
+	display: none;	
+}
+
+.contextMenu a:hover{
+	background: #00bbee;
+	text-decoration:none;	
+}
+
+.closeButton {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	border-bottom: 1px solid gray;
+	border-left: 1px solid gray;
+	font-weight: bold;
+	cursor: pointer;
+	padding: 2px 4px 2px 4px;
+}
+
+#nav{
+	float:left;
+	width:100%;
+	list-style:none;
+	margin-bottom:10px; 
+	margin-left:-38px;
+}
+#nav li{
+	float:left;
+	position:relative;
+	display:block;
+}
+#nav li a{
+	display:block;
+	padding: 2px 15px;
+	color:#333333;
+	background:#eef0fc;
+	text-decoration:none;
+}
+#nav li a:hover{
+	color:#fff;
+	background:#6b0c36;
+}
+#nav ul{ 	list-style:none;
+	position:absolute;
+	display: none;
+}
+#nav ul li{
+	padding-top:0px; 
+	float:none;
+	width: 230px;
+}
+#nav ul a{
+	white-space:nowrap; 
+	display:block;
+}
+#nav li:hover ul{ 
+	display: block;
+}
+#nav li:hover a{ 
+	background:#eeeeee;
+	color:#333333;
+}
+#nav li:hover ul li a:hover{ 
+	background:#cccccc;
+}
+
+.lb {
+color:#666666
+}
+.edit {
+   font-size: 14px;
+   font-family: Tahoma, Arial;
+   color: #0;
+   }
+
+.sort {
+    font-size: 10px;
+}
+.buttom {
+   cursor: pointer;
+   behavior:button;
+}
+.smart_input {
+   position: relative;
+   vertical-align: top;
+   }
+.smart_input label {
+   position: absolute;
+   top: 4px;
+   left: 1px;
+   display: none;
+   cursor: text;
+   font-size: 12px;
+   font-family: Arial;
+   color: #AAAAAA;
+   }
+a:link {
+	color: #000000;
+	text-decoration: none;
+}
+a:visited {
+	text-decoration: none;
+	color: #000000;
+}
+a:hover {
+	text-decoration: underline;
+	color: #0000000;
+}
+
+#tcTools {
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+	border-top: 1px solid #ccc;
+	border-bottom: 1px solid #ccc;
+
+}
+
+#tdFace {
+	border-left: 1px solid #ddd;
+	border-right: 1px solid #ddd;
+	border-top: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
+
+}
+
+div.tableContainerCore {
+	clear: both;
+	border: 1px solid #666666;
+	height: 238px;
+	overflow: auto;
+	width: 745px
+}
+
+div.tableContainerGuide {
+	clear: both;
+	border: 1px solid #666666;
+	height: 244px;
+	overflow: auto;
+	width: 745px
+}
+
+html>body div.tableContainerCore {
+	overflow: hidden;
+	width: 765px
+}
+html>body div.tableContainerAnaliz {
+	overflow: hidden;
+	width: 775px;
+	height: 226px;
+}
+
+div.tableContainerCore table {
+	float: left;
+	width: 730px
+}
+html>body div.tableContainerCore table {
+	width: 745px
+}
+
+html>body thead.fixedHeaderCore tr {
+	display: block 
+}
+thead.fixedHeaderCore th {
+	background: #eeeeee;
+	border-left: 1px solid #eeeeee;
+	border-right: 1px solid #eeeeee;
+	border-top: 1px solid #eeeeee;
+	border-bottom: 1px solid #CCC;
+	font-weight: normal;
+	padding: 4px 3px;
+	text-align: left
+}
+thead.fixedHeaderCore a, thead.fixedHeaderCore a:link, thead.fixedHeaderCore a:visited {
+	color: #111;
+	display: block;
+	text-decoration: none;
+	width: 100%
+}
+thead.fixedHeaderCore a:hover {
+	color: #111;
+	display: block;
+	text-decoration: none;
+	width: 100%
+}
+
+html>body tfoot.fixedHeaderCore tr {
+	display: block
+}
+tfoot.fixedHeaderCore th {
+	background: #eeeeee;
+	border-left: 1px solid #eeeeee;
+	border-right: 1px solid #eeeeee;
+	border-top: 1px solid #eeeeee;
+	border-bottom: 1px solid #CCC;
+	font-weight: normal;
+	padding: 4px 3px;
+	text-align: left
+}
+tfoot.fixedHeaderCore a, tfoot.fixedHeaderCore a:link, tfooot.fixedHeaderCore a:visited {
+	color: #111;
+	display: block;
+	text-decoration: none;
+	width: 100%
+}
+tfoot.fixedHeaderCore a:hover {
+	color: #111;
+	display: block;
+	text-decoration: none;
+	width: 100%
+}
+
+html>body tbody.scrollContentCore {
+	display: block;
+	height: 215px;
+	overflow: auto;
+	width: 100%;
+	 
+}
+.cl{
+	behavior:button;
+}
+
+html>body tbody.scrollContentGuide {
+	display: block;
+	height: 216px;
+	overflow: auto;
+	width: 100%
+}
+
+
+
+tbody.scrollContentCore td, tbody.scrollContentCore tr.normalRow td {
+	border-bottom: 1px solid #DDD;
+	border-left: none;
+	border-right: 1px solid #CCC;
+	border-top: none;
+	padding: 2px 3px 3px 4px
+}
+
+tbody.scrollContentCore tr.alternateRow td {
+	background: #EEE;
+	border-bottom: none;
+	border-left: none;
+	border-right: 1px solid #CCC;
+	border-top: 1px solid #DDD;
+	padding: 2px 3px 3px 4px
+}
+html>body thead.fixedHeaderCore th {
+	width: 100px
+}
+
+html>body thead.fixedHeaderCore th + th {
+	width: 100px
+}
+
+html>body thead.fixedHeaderCore th + th + th {
+	width: 120px
+}
+html>body thead.fixedHeaderCore th + th + th + th {
+	width: 100px
+}
+html>body thead.fixedHeaderCore th + th + th + th + th {
+	width: 100px
+}
+html>body thead.fixedHeaderCore th + th + th + th + th + th {
+	width: 184px
+}
+
+html>body tfoot.fixedHeaderCore th {
+	width: 100px
+}
+
+html>body tfoot.fixedHeaderCore th + th {
+	width: 100px
+}
+
+html>body tfoot.fixedHeaderCore th + th + th {
+	width: 120px
+}
+html>body tfoot.fixedHeaderCore th + th + th + th {
+	width: 100px
+}
+html>body tfoot.fixedHeaderCore th + th + th + th + th {
+	width: 100px
+}
+html>body tfoot.fixedHeaderCore th + th + th + th + th + th {
+	width: 184px
+}
+
+html>body tbody.scrollContentCore td {
+	width: 100px
+}
+
+html>body tbody.scrollContentCore td + td {
+	width: 100px
+}
+
+html>body tbody.scrollContentCore td + td + td {
+	width: 120px
+}
+
+html>body tbody.scrollContentCore td + td + td +td {
+	width: 100px
+}
+
+html>body tbody.scrollContentCore td + td + td +td + td {
+	width: 100px
+}
+
+html>body tbody.scrollContentCore td + td + td +td + td + td {
+	width: 160px
+}
+
+html>body tbody.scrollContentAnaliz {
+	display: block;
+	height: 168px;
+	overflow: auto;
+	width: 100%
+}
+
+html>body tbody.scrollContentAnaliz td {
+	width: 90px
+}
+
+html>body tbody.scrollContentAnaliz td + td {
+	width: 90px
+}
+
+html>body tbody.scrollContentAnaliz td + td + td {
+	width: 90px
+}
+
+html>body tbody.scrollContentAnaliz td + td + td +td {
+	width: 90px
+}
+
+html>body tbody.scrollContentAnaliz td + td + td +td + td {
+	width: 90px
+}
+
+html>body tbody.scrollContentAnaliz td + td + td +td + td + td {
+	width: 90px
+}
+html>body tbody.scrollContentAnaliz td + td + td +td + td + td  + td {
+	width: 130px
+}
+
+
+html>body thead.fixedHeaderAnaliz th {
+	width: 90px
+}
+
+html>body thead.fixedHeaderAnaliz th + th {
+	width: 90px
+}
+
+html>body thead.fixedHeaderAnaliz th + th + th {
+	width: 90px
+}
+html>body thead.fixedHeaderAnaliz th + th + th + th {
+	width: 90px
+}
+html>body thead.fixedHeaderAnaliz th + th + th + th + th {
+	width: 90px
+}
+html>body thead.fixedHeaderAnaliz th + th + th + th + th + th {
+	width: 90px
+}
+html>body thead.fixedHeaderAnaliz th + th + th + th + th + th + th {
+	width: 164px
+}
+
+
+html>body tfoot.fixedHeaderAnaliz th {
+	width: 90px
+}
+
+html>body tfoot.fixedHeaderAnaliz th + th {
+	width: 90px
+}
+
+html>body tfoot.fixedHeaderAnaliz th + th + th {
+	width: 90px
+}
+html>body tfoot.fixedHeaderAnaliz th + th + th + th {
+	width: 90px
+}
+html>body tfoot.fixedHeaderAnaliz th + th + th + th + th {
+	width: 90px
+}
+html>body tfoot.fixedHeaderAnaliz th + th + th + th + th + th {
+	width: 90px
+}
+html>body tfoot.fixedHeaderAnaliz th + th + th + th + th + th + th {
+	width: 164px
+}
+
+div.tableContainer {
+	clear: both;
+	border: 1px solid #999999;
+	height: 250px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	width: 780px 
+}
+
+/* Reset overflow value to hidden for all non-IE browsers. */
+html>body div.tableContainer {
+	overflow-y: auto;
+	overflow-x: hidden;
+	width: 780px 
+}
+
+/* define width of table. IE browsers only                 */
+div.tableContainer table {
+	float: left;
+	width: 660px 
+}
+
+/* define width of table. Add 16px to width for scrollbar.           */
+/* All other non-IE browsers.                                        */
+html>body div.tableContainer table {
+	width: 780px 
+}
+
+div.smallContainer {
+	clear: both;
+	border: 1px solid #999999;
+	height: 150px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	width: 480px 
+}
+
+/* Reset overflow value to hidden for all non-IE browsers. */
+html>body div.smallContainer {
+	overflow-y: auto;
+	overflow-x: hidden;
+	width: 480px 
+}
+
+/* define width of table. IE browsers only                 */
+div.smallContainer table {
+	float: left;
+	width: 460px 
+}
+
+/* define width of table. Add 16px to width for scrollbar.           */
+/* All other non-IE browsers.                                        */
+html>body div.smallContainer table {
+	width: 480px 
+}
+
+html>body thead.fixedHeaderSmall th {
+	width: 100px
+}
+
+html>body thead.fixedHeaderSmall th + th {
+	width: 100px
+}
+
+html>body thead.fixedHeaderSmall th + th + th {
+	width: 100px
+}
+
+html>body thead.fixedHeaderSmall th + th + th  + th {
+	width: 100px
+}
+
+html>body tfoot.fixedHeaderSmall th {
+	width: 100px
+}
+
+html>body tfoot.fixedHeaderSmall th + th {
+	width: 100px
+}
+
+html>body tfoot.fixedHeaderSmall th + th + th {
+	width: 120px
+}
+
+html>body tfoot.fixedHeaderSmall th + th + th + th {
+	width: 100px
+}
+
+html>body tbody.scrollContentSmall td {
+	width: 100px
+}
+
+html>body tbody.scrollContentSmall td + td {
+	width: 100px
+}
+
+html>body tbody.scrollContentSmall td + td + td {
+	width: 100px
+}
+
+html>body tbody.scrollContentSmall td + td + td  + td {
+	width: 100px
+}
+
+html>body thead.fixedHeaderMonth th {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th  + th {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th  + th  + th {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th  + th  + th + th {
+	width: 70px
+}
+html>body thead.fixedHeaderMonth th + th + th  + th  + th + th  + th {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  + th  {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  + th  + th {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  + th  + th  + th {
+	width: 70px
+}
+
+html>body thead.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  + th  + th  + th + th{
+	width: 80px
+}
+
+
+html>body tfoot.fixedHeaderMonth th {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th + th {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th + th + th {
+	width: 70px
+}
+
+
+html>body tfoot.fixedHeaderMonth th + th + th  + th  + th {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th + th  + th  + th + th {
+	width: 70px
+}
+html>body tfoot.fixedHeaderMonth th + th + th  + th  + th + th  + th {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  + th  {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  + th  + th {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  + th  + th  + th {
+	width: 70px
+}
+
+html>body tfoot.fixedHeaderMonth th + th + th  + th  + th + th  + th  + th  + th  + th  + th  + th + th{
+	width: 80px
+}
+
+
+
+html>body tbody.scrollContentMonth td {
+	width: 70px
+}
+
+html>body tbody.scrollContentMonth td + td {
+	width: 70px
+}
+
+html>body tbody.scrollContentMonth td + td + td {
+	width: 70px
+}
+
+html>body tbody.scrollContentMonth td + td + td  + td {
+	width: 70px
+}
+html>body tbody.scrollContentMonth td + td + td  + td  + td {
+	width: 70px
+}
+html>body tbody.scrollContentMonth td + td + td  + td  + td + td {
+	width: 70px
+}
+
+html>body tbody.scrollContentMonth td + td + td  + td  + td + td + td {
+	width: 70px
+}
+
+html>body tbody.scrollContentMonth td + td + td  + td  + td + td + td  + td {
+	width: 70px
+}
+
+html>body tbody.scrollContentMonth td + td + td  + td  + td + td + td  + td  + td {
+	width: 70px
+}
+
+html>body tbody.scrollContentMonth td + td + td  + td  + td + td + td  + td  + td  + td{
+	width: 70px
+}
+
+html>body tbody.scrollContentMonth td + td + td  + td  + td + td + td  + td  + td  + td  + td {
+	width: 70px
+}
+html>body tbody.scrollContentMonth td + td + td  + td  + td + td + td  + td  + td  + td  + td  + td {
+	width: 70px
+}
+html>body tbody.scrollContentMonth td + td + td  + td  + td + td + td  + td  + td  + td  + td  + td  + td {
+	width: 70px
+}
+
+div.planContainer {
+	clear: both;
+	border: 1px solid #999999;
+	height: 460px;
+	overflow-y: auto;
+	overflow-x: hidden;
+	width: 420px 
+}
+
+/* Reset overflow value to hidden for all non-IE browsers. */
+html>body div.planContainer {
+	overflow-y: auto;
+	overflow-x: hidden;
+	width: 420px 
+}
+
+/* define width of table. IE browsers only                 */
+div.planContainer table {
+	float: left;
+	width: 400px 
+}
+
+/* define width of table. Add 16px to width for scrollbar.           */
+/* All other non-IE browsers.                                        */
+html>body div.planContainer table {
+	width: 420px 
+}
+
+div.planSmallContainer {
+ 	clear: both;
+ 	border: 1px solid #999999;
+ 	height: 460px;
+ 	overflow-y: auto;
+ 	overflow-x: hidden;
+ 	width: 320px
+ }
+
+ div.guideSmallContainer {
+ 	clear: both;
+     	border: 1px solid #999999;
+     	height: 125px;
+     	overflow-y: auto;
+     	overflow-x: hidden;
+     	width: 320px
+
+ }
+
+ html>body tbody.scrollContentSmallGuide {
+ 	display: block;
+ 	height: 97px;
+ 	overflow: auto;
+ 	width: 100%
+ }
+
+
+/* Reset overflow value to hidden for all non-IE browsers. */
+html>body div.planSmallContainer {
+	overflow-y: auto;
+	overflow-x: hidden;
+	width: 320px 
+}
+
+/* define width of table. IE browsers only                 */
+div.planSmallContainer table {
+	float: left;
+	width: 300px 
+}
+
+/* define width of table. Add 16px to width for scrollbar.           */
+/* All other non-IE browsers.                                        */
+html>body div.planSmallContainer table {
+	width: 320px 
+}
+
+
+
+/* define the table content to be scrollable                                              */
+/* set TBODY element to have block level attributes. All other non-IE browsers            */
+/* this enables overflow to work on TBODY element. All other non-IE, non-Mozilla browsers */
+/* induced side effect is that child TDs no longer accept width: auto                     */
+
+/*
+html>body table.scrollContent {
+	display: block;
+	height: 250px;
+
+	width: 100%
+}
+*/
+/* make TD elements pretty. Provide alternating classes for striping the table */
+/* http://www.alistapart.com/articles/zebratables/                             */
+table.scrollContent td {
+/*	background: #FFF; */
+	border-top: none ;
+	border-left: none;
+	border-right: none;
+	border-bottom: 1px solid #DDD;
+	padding: 2px 0px 2px 0px
+}
+
+
+
