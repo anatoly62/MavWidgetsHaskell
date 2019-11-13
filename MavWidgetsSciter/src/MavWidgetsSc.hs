@@ -26,6 +26,18 @@ import SciterApi
 type GuiPtr=Addr
 type WinPtr=HWND
 
+
+newtype MavButton=MavButton GuiPtr
+newtype MavFlatButton=MavFlatButton GuiPtr
+newtype MavCheck=MavCheck GuiPtr
+newtype MavCombo=MavCombo GuiPtr
+newtype MavDate=MavDate GuiPtr
+newtype MavItem=MavItem GuiPtr
+newtype MavText=MavText GuiPtr
+newtype MavTable=MavTable GuiPtr
+newtype MavWindow=MavWindow WinPtr
+newtype MavMenu=MavMenu GuiPtr
+
 ---MavWidgets Callbacks
 exitStore :: IORef UINT
 {-# NOINLINE exitStore #-}
@@ -241,7 +253,7 @@ tryE  err fun=(try  fun :: IO (Either SomeException ())) >>= checkError err
 tryEBool::String->IO Bool->IO Bool
 tryEBool  err fun=(try  fun :: IO (Either SomeException Bool)) >>= checkErrorBool err
 
-initGui::String->Int->Int->IO (HWND, GuiPtr)
+initGui::String->Int->Int->IO (MavWindow, GuiPtr)
 initGui path width height=do
   apiPtr
   sciterClass<-sciterClassName
@@ -252,11 +264,11 @@ initGui path width height=do
   unless res $ error "parse file error " 
   --showWindow hwnd sW_SHOWNORMAL
   root<-sciterGetRoot  hwnd  
-  return (hwnd,root)
+  return (MavWindow hwnd,root)
  
 
   
-loadGui::String->Int->Int->IO (HWND, GuiPtr)
+loadGui::String->Int->Int->IO (MavWindow, GuiPtr)
 loadGui path width height=do
   sciterClass<-sciterClassName
   windowTitle<-newCWString "Sciter Window"
@@ -265,7 +277,7 @@ loadGui path width height=do
   sciterLoadFile  hwnd path
 --  showWindow hwnd sW_SHOWNORMAL
   root<-sciterGetRoot  hwnd  
-  return (hwnd,root)
+  return (MavWindow hwnd,root)
 
 loopGui :: IO ()
 loopGui  = allocaMessage $ \ msg ->
@@ -277,65 +289,87 @@ loopGui  = allocaMessage $ \ msg ->
           dispatchMessage msg
           pump
   in pump
+  
+  
+textPtr::MavText->GuiPtr
+textPtr (MavText ptr)=ptr
 
-button::GuiPtr->String->IO GuiPtr
+checkPtr::MavCheck->GuiPtr
+checkPtr (MavCheck ptr)=ptr
+
+comboPtr::MavCombo->GuiPtr
+comboPtr (MavCombo ptr)=ptr
+
+datePtr::MavDate->GuiPtr
+datePtr (MavDate ptr)=ptr
+
+buttonPtr::MavButton->GuiPtr
+buttonPtr (MavButton ptr)=ptr 
+
+flatButtonPtr::MavFlatButton->GuiPtr
+flatButtonPtr (MavFlatButton ptr)=ptr 
+
+itemPtr::MavItem->GuiPtr
+itemPtr (MavItem ptr)=ptr 
+
+button::GuiPtr->String->IO MavButton
 button root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
   when (ptr==nullPtr) $ error "button nullPtr"
   sciterAttachEventHandler ptr btEvent 
-  return ptr
+  return $ MavButton ptr
 
-buttonGetText::GuiPtr->IO ByteString
-buttonGetText =sciterGetStrValue
+buttonGetText::MavButton->IO ByteString
+buttonGetText (MavButton ptr) =sciterGetStrValue ptr
 
-buttontSetText::GuiPtr->ByteString->IO ()
-buttontSetText el val = sciterSetStrValue el val >>=checkSciterError "textSetText"
+buttontSetText::MavButton->ByteString->IO ()
+buttontSetText (MavButton el) val = sciterSetStrValue el val >>=checkSciterError "textSetText"
 
-buttonOnClick:: GuiPtr->IO ()->IO()
-buttonOnClick ptr fun  =  modifyIORef _buttonsStore_ $ (:) (ptr,fun)
+buttonOnClick:: MavButton->IO ()->IO()
+buttonOnClick (MavButton ptr) fun  =  modifyIORef _buttonsStore_ $ (:) (ptr,fun)
 
-checkButton::GuiPtr->String->IO GuiPtr
+checkButton::GuiPtr->String->IO MavCheck
 checkButton root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
   when (ptr==nullPtr) $ error "checkButton nullPtr"
   sciterAttachEventHandler ptr chEvent 
-  return ptr
+  return $ MavCheck ptr
 
-checkButtonIsChecked::GuiPtr->IO Bool
-checkButtonIsChecked ptr=do
+checkButtonIsChecked::MavCheck->IO Bool
+checkButtonIsChecked (MavCheck ptr)=do
   res<-sciterGetIntValue ptr
   return  $ res /= 0
   
-checkButtonCheck::GuiPtr->Bool->IO ()
-checkButtonCheck ptr value=  sciterSetIntValue ptr (if value then 1 else 0) 2 >>=checkSciterError "checkButtonChecked"
+checkButtonCheck::MavCheck->Bool->IO ()
+checkButtonCheck (MavCheck ptr) value=  sciterSetIntValue ptr (if value then 1 else 0) 2 >>=checkSciterError "checkButtonChecked"
 
-checkButtonOnChange:: GuiPtr->IO ()->IO()
-checkButtonOnChange ptr fun  =  modifyIORef _checksStore_ $ (:) (ptr,fun)
+checkButtonOnChange:: MavCheck->IO ()->IO()
+checkButtonOnChange (MavCheck ptr) fun  =  modifyIORef _checksStore_ $ (:) (ptr,fun)
 
-combo::GuiPtr->String->IO GuiPtr
+combo::GuiPtr->String->IO MavCombo
 combo root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
   when (ptr==nullPtr) $ error "combo nullPtr"
   sciterSetAttribute ptr "index" "0"
   sciterAttachEventHandler ptr cbEvent
-  return ptr
+  return $ MavCombo ptr
 
-comboOnChange:: GuiPtr->IO ()->IO()
-comboOnChange ptr fun  =  modifyIORef _combosStore_ $ (:) (ptr,fun)
+comboOnChange:: MavCombo->IO ()->IO()
+comboOnChange (MavCombo ptr) fun  =  modifyIORef _combosStore_ $ (:) (ptr,fun)
 
-comboGetText::GuiPtr->IO ByteString
-comboGetText =sciterGetStrValue
+comboGetText::MavCombo->IO ByteString
+comboGetText (MavCombo ptr) =sciterGetStrValue ptr
 
-comboSetText::GuiPtr->ByteString->IO UINT
-comboSetText =sciterSetStrValue
+comboSetText::MavCombo->ByteString->IO UINT
+comboSetText (MavCombo ptr) =sciterSetStrValue ptr
 
-comboGetIndex::GuiPtr->IO Int
-comboGetIndex addr=do
+comboGetIndex::MavCombo->IO Int
+comboGetIndex (MavCombo addr)=do
   r<-sciterGetAttribute addr "index"
   return $ read r
 
-comboSetIndex::GuiPtr->Int->IO ()
-comboSetIndex el n=do
+comboSetIndex::MavCombo->Int->IO ()
+comboSetIndex (MavCombo el) n=do
   p<-sciterGetNthChild el 0
   cnt <-sciterGetClildCount p
   if n<fromIntegral cnt then do
@@ -346,97 +380,99 @@ comboSetIndex el n=do
     when(r==0) $ sciterSetAttribute el "index" ( show n) >>= checkSciterError "end comboSetIndex"
   else error "comboSetIndexError"
   
-comboFill::GuiPtr->[ByteString]->IO ()
-comboFill  ptr lst= do
+comboFill::MavCombo->[ByteString]->IO ()
+comboFill  (MavCombo ptr) lst= do
   popup<-sciterGetNthChild ptr 0
   res<-sciterSetHtml  popup $ foldl' (\r el-> r <> "<option>" <> el <> "</option>") "" lst
   when(res/=0) $ error "comboFill"
-  comboSetIndex ptr 0
+  comboSetIndex (MavCombo ptr) 0
  
-comboGetItems::GuiPtr->IO[ByteString]
-comboGetItems ptr=do
+comboGetItems::MavCombo->IO[ByteString]
+comboGetItems (MavCombo ptr)=do
   popUp<-sciterGetNthChild ptr 0
   cnt<-sciterGetClildCount popUp
   mapM (sciterGetNthChild popUp >=> sciterGetStrValue ) [0..cnt-1]
 
-comboSearch::GuiPtr->[ByteString]->ByteString->Int->IO()
-comboSearch ptr lst str  n = forM_ (findIndex (\el->doublePrefixOf str el  n) lst) $ comboSetIndex ptr
+comboSearch::MavCombo->[ByteString]->ByteString->Int->IO()
+comboSearch (MavCombo ptr) lst str  n = forM_ (findIndex (\el->doublePrefixOf str el  n) lst) $ comboSetIndex $ MavCombo ptr
   
-datePick::GuiPtr->String->IO GuiPtr
+datePick::GuiPtr->String->IO MavDate
 datePick root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
   when (ptr==nullPtr) $ error "datePisk nullPtr"
   sciterAttachEventHandler ptr dateEvent
-  return ptr
+  return $ MavDate ptr
 
-datePickGetText::GuiPtr->IO ByteString
-datePickGetText ptr  =do
+datePickGetText::MavDate->IO ByteString
+datePickGetText (MavDate ptr)  =do
   r<-sciterGetIn64Value ptr
   let delta=(r-116444628000000000)`div` 10000000
   return $ fromStr $ show $ utctDay  $ posixSecondsToUTCTime $ fromIntegral delta
   
-datePickSetText::GuiPtr->ByteString->IO ()
-datePickSetText ptr val =do
+datePickSetText::MavDate->ByteString->IO ()
+datePickSetText (MavDate ptr) val =do
 --  print "start datePickSetText" 
   let ut=read $  toStr val ++" 00:00:00.000000 UTC"::UTCTime
   let sec= round $ utcTimeToPOSIXSeconds ut
   sciterSetInt64Value ptr ( 116444628000000000 + sec * 10000000+864000000000) 6 >>=checkSciterError "end datePickSetText"
 
-datePickOnChange:: GuiPtr->IO ()->IO()
-datePickOnChange ptr fun  =  modifyIORef _datesStore_ $ (:) (ptr,fun)
+datePickOnChange:: MavDate->IO ()->IO()
+datePickOnChange (MavDate ptr) fun  =  modifyIORef _datesStore_ $ (:) (ptr,fun)
 
-flatButton::GuiPtr->String->IO GuiPtr
+flatButton::GuiPtr->String->IO MavFlatButton
 flatButton root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
   when (ptr==nullPtr) $ error "flatButton nullPtr"
   sciterAttachEventHandler ptr flatBtEvent
-  return ptr
+  return $ MavFlatButton ptr
 
-flatButtonOnClick:: GuiPtr->IO ()->IO()
-flatButtonOnClick ptr fun  =  modifyIORef _flatButtonsStore_ $ (:) (ptr,fun)
+flatButtonOnClick:: MavFlatButton->IO ()->IO()
+flatButtonOnClick (MavFlatButton ptr) fun  =  modifyIORef _flatButtonsStore_ $ (:) (ptr,fun)
 
-menuItem::GuiPtr->String->IO GuiPtr
+menuItem::GuiPtr->String->IO MavItem
 menuItem root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
   when (ptr==nullPtr) $ error "menuItem nullPtr"
   sciterAttachEventHandler ptr menuEvent 
-  return ptr
+  return $ MavItem ptr
 
-menuItemOnClick:: GuiPtr->IO ()->IO()
-menuItemOnClick ptr fun  =  modifyIORef _menuItemsStore_ $ (:) (ptr,fun)
+menuItemOnClick:: MavItem->IO ()->IO()
+menuItemOnClick (MavItem ptr) fun  =  modifyIORef _menuItemsStore_ $ (:) (ptr,fun)
 
-menu::GuiPtr->String->IO GuiPtr
-menu root css =sciterSelectElement  root $ "#" ++ css
+menu::GuiPtr->String->IO MavMenu
+menu root css =do
+  ptr<- sciterSelectElement  root $ "#" ++ css
+  return $ MavMenu ptr
 
-menuShow::GuiPtr->GuiPtr->IO ()
-menuShow menu parent=do
+menuShow::MavMenu ->GuiPtr->IO ()
+menuShow (MavMenu menu) parent=do
   sciterShowPopUp menu parent
   return()
 
-table::GuiPtr->String->IO GuiPtr
+table::GuiPtr->String->IO MavTable
 table root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
   when (ptr==nullPtr) $ error "table nullPtr"
   sciterSetAttribute ptr "index" "-1"
   sciterAttachEventHandler ptr tableEvent
-  return ptr
+  return $ MavTable ptr
 
-tableOnClick:: GuiPtr->(Int->IO())->IO()
-tableOnClick ptr fun  =  modifyIORef _tablesStore_ $ (:) (ptr,fun)
+tableOnClick:: MavTable->(Int->IO())->IO()
+tableOnClick (MavTable ptr) fun  =  modifyIORef _tablesStore_ $ (:) (ptr,fun)
 
-tableOnDblClick:: GuiPtr->(Int->IO())->IO()
-tableOnDblClick ptr fun  =  modifyIORef _tablesStoreDbl_ $ (:) (ptr,fun)
+tableOnDblClick:: MavTable->(Int->IO())->IO()
+tableOnDblClick (MavTable ptr) fun  =  modifyIORef _tablesStoreDbl_ $ (:) (ptr,fun)
 
-tableOnMenu:: GuiPtr->(Int->IO())->IO()
-tableOnMenu ptr fun  =  modifyIORef _tablesStoreMenu_ $ (:) (ptr,fun)
+tableOnMenu:: MavTable->(Int->IO())->IO()
+tableOnMenu (MavTable ptr) fun  =  modifyIORef _tablesStoreMenu_ $ (:) (ptr,fun)
 
-tableGetIndex::GuiPtr->IO Int
-tableGetIndex tbl=do
+tableGetIndex::MavTable->IO Int
+tableGetIndex (MavTable tbl)=do
   strIdx<-sciterGetAttribute tbl "index"
   return $ read strIdx::IO Int
   
-tableSetIndex::GuiPtr->Int->IO()
-tableSetIndex tbl n=do
+tableSetIndex::MavTable->Int->IO()
+tableSetIndex (MavTable tbl) n=do
   strIdx<-sciterGetAttribute tbl "index"
   let idx=read strIdx::Int
   when (idx>=0) $ do
@@ -451,70 +487,70 @@ tableSetIndex tbl n=do
       sciterSetAttribute tbl "index" ( show n) >>=checkSciterError "end tableSetIndex"
   else   sciterSetAttribute tbl "index" "-1"  >>=checkSciterError "end tableSetIndex"
 
-tableScroll::GuiPtr->IO()
-tableScroll tbl=do
+tableScroll::MavTable->IO()
+tableScroll (MavTable tbl)=do
   strIdx<-sciterGetAttribute tbl "index"
   when(strIdx/="-1") $ do
     let idx=read strIdx::Word32
     row<-sciterGetNthChild tbl idx
     sciterScrollToView row >>=checkSciterError "end tableScroll"
     
-tableScrollTo::GuiPtr->Int->IO()
-tableScrollTo tbl idx=
+tableScrollTo::MavTable->Int->IO()
+tableScrollTo (MavTable tbl) idx=
   when(idx>0) $ do
     row<-sciterGetNthChild tbl $ fromIntegral idx
     sciterScrollToView row >>=checkSciterError "end tableScroll"    
 
-tableAddRow::GuiPtr->c->[ c->  ByteString]->IO ()
-tableAddRow ptr item fns=do
+tableAddRow::MavTable->c->[ c->  ByteString]->IO ()
+tableAddRow (MavTable ptr) item fns=do
   let rowHtml=rowFill item fns
   cnt<-sciterGetClildCount ptr
   row<-sciterCreateElem "tr"
   r<-sciterInsertElem row ptr cnt
   sciterSetHtml row rowHtml
-  tableSetIndex ptr $ fromIntegral cnt
+  tableSetIndex (MavTable ptr) $ fromIntegral cnt
   sciterScrollToView row >>=checkSciterError "tableAddRow"
 
-tableAddRowM::GuiPtr->c->[ c-> IO ByteString]->IO ()
-tableAddRowM ptr item fns=do
+tableAddRowM::MavTable->c->[ c-> IO ByteString]->IO ()
+tableAddRowM (MavTable ptr) item fns=do
   rowHtml<-rowFillM item fns
   cnt<-sciterGetClildCount ptr
   row<-sciterCreateElem "tr"
   r<-sciterInsertElem row ptr cnt
   sciterSetHtml row rowHtml
-  tableSetIndex ptr $ fromIntegral cnt
+  tableSetIndex (MavTable ptr) $ fromIntegral cnt
   sciterScrollToView row >>=checkSciterError "tableAddRowM"
 
-tableChangeRow::GuiPtr->c->[ c-> ByteString]->IO ()
-tableChangeRow ptr item fns=do
+tableChangeRow::MavTable->c->[ c-> ByteString]->IO ()
+tableChangeRow (MavTable ptr) item fns=do
   let rowHtml=rowFill item fns
   strIdx<-sciterGetAttribute ptr "index"
   let idx=read strIdx::Int
   ptr'<-sciterGetNthChild ptr $ fromIntegral idx
   sciterSetHtml ptr' rowHtml >>=checkSciterError "tableChangeRow"
 
-tableChangeRowM::GuiPtr->c->[ c-> IO ByteString]->IO ()
-tableChangeRowM ptr item fns=do
+tableChangeRowM::MavTable->c->[ c-> IO ByteString]->IO ()
+tableChangeRowM (MavTable ptr) item fns=do
   rowHtml<-rowFillM item fns
   strIdx<-sciterGetAttribute ptr "index"
   let idx=read strIdx::Int
   ptr'<-sciterGetNthChild ptr $ fromIntegral idx
   sciterSetHtml ptr' rowHtml >>=checkSciterError "tableChangeRowM"
 
-tableDeleteRow::GuiPtr->IO ()
-tableDeleteRow ptr=do
+tableDeleteRow::MavTable->IO ()
+tableDeleteRow (MavTable ptr)=do
   strIdx<-sciterGetAttribute ptr "index"
   let n= read strIdx::Int
   sciterGetNthChild ptr (fromIntegral n) >>= sciterDeleteElem 
   sciterSetAttribute ptr "index" "-1"
-  tableSetIndex ptr  $ if n>0 then  n-1 else  0 
+  tableSetIndex (MavTable ptr)  $ if n>0 then  n-1 else  0 
   
 rowFill:: c->[c->ByteString]->  ByteString
 rowFill item = foldl' (\r f-> r <> "<td>" <>  f item <> "</td>") B.empty
 
-tableFill::GuiPtr->[c]->[ c-> ByteString]-> IO UINT
-tableFill  ptr store fns=do
-  tableSetIndex ptr (-1)
+tableFill::MavTable->[c]->[ c-> ByteString]-> IO UINT
+tableFill  (MavTable ptr) store fns=do
+  tableSetIndex (MavTable ptr) (-1)
   sciterSetHtml  ptr $ foldl' (\r it-> r <> "<tr>" <> rowFill it fns <> "</tr>") B.empty store 
 
 rowFillM:: c->[c->IO ByteString]-> IO ByteString
@@ -522,63 +558,63 @@ rowFillM item = foldM (\r f->do
                               s<-f item
                               return $! r <> "<td>" <>  s <> "</td>") B.empty 
 
-tableFillM::GuiPtr->[c]->[ c->IO ByteString]-> IO ()
-tableFillM  ptr store fns=do
-  tableSetIndex ptr (-1)
+tableFillM::MavTable->[c]->[ c->IO ByteString]-> IO ()
+tableFillM  (MavTable ptr) store fns=do
+  tableSetIndex (MavTable ptr) (-1)
   str<-foldM (\r it->do
                        s<-rowFillM it fns
                        return $! r <> "<tr>" <> s <> "</tr>") B.empty store
   sciterSetHtml  ptr str >>=checkSciterError "end tableFillM"
 
-tableGetRow::GuiPtr->Word32->IO GuiPtr
-tableGetRow =sciterGetNthChild
+tableGetRow::MavTable->Word32->IO GuiPtr
+tableGetRow (MavTable ptr)  =sciterGetNthChild ptr
 
-tableSetHeaderText::GuiPtr->Int->ByteString->IO()
-tableSetHeaderText ptr n s=do
+tableSetHeaderText::MavTable->Int->ByteString->IO()
+tableSetHeaderText (MavTable ptr) n s=do
   row<-sciterGetNthChild ptr 0
   cell<-sciterGetNthChild row $ fromIntegral n
   sciterSetHtml cell s>>=checkSciterError "tableSetHeaderText"
   
-tableSearch::GuiPtr->[ByteString]->ByteString->Int->IO()
-tableSearch ptr lst str  n = do
+tableSearch::MavTable->[ByteString]->ByteString->Int->IO()
+tableSearch (MavTable ptr) lst str  n = do
   let idx=findIndex (\el->doublePrefixOf str el  n) lst 
-  forM_ idx $ tableSetIndex ptr
-  forM_ idx $ tableScrollTo ptr
+  forM_ idx $ tableSetIndex $ MavTable ptr
+  forM_ idx $ tableScrollTo $ MavTable ptr
    
-text::GuiPtr->String->IO GuiPtr
+text::GuiPtr->String->IO MavText
 text root css =do
   ptr<-sciterSelectElement  root $ "#" ++ css
   when (ptr==nullPtr) $ error "text nullPtr"
   sciterAttachEventHandler ptr textEvent
-  return ptr  
+  return $ MavText ptr  
 
-textGetText::GuiPtr->IO ByteString
-textGetText =sciterGetStrValue
+textGetText::MavText->IO ByteString
+textGetText (MavText ptr) =sciterGetStrValue ptr
  
-textSetText::GuiPtr->ByteString->IO ()
-textSetText el val = sciterSetStrValue el val >>=checkSciterError "textSetText"
+textSetText::MavText->ByteString->IO ()
+textSetText (MavText el) val = sciterSetStrValue el val >>=checkSciterError "textSetText"
 
-textSelectAll::GuiPtr->IO()
-textSelectAll ptr=  sciterScriptMethod ptr "doSelectAll" >>=checkSciterError "textSelectAll"
+textSelectAll::MavText->IO()
+textSelectAll (MavText ptr)=  sciterScriptMethod ptr "doSelectAll" >>=checkSciterError "textSelectAll"
 
-textOnChange:: GuiPtr->IO ()->IO()
-textOnChange ptr fun  =  modifyIORef _textsStore_ $ (:) (ptr,fun)
+textOnChange:: MavText->IO ()->IO()
+textOnChange (MavText ptr) fun  =  modifyIORef _textsStore_ $ (:) (ptr,fun)
 
-textOnKey:: GuiPtr->(Int->IO())->IO()
-textOnKey ptr fun  =  modifyIORef _textsStore2_ $ (:) (ptr,fun)
+textOnKey:: MavText->(Int->IO())->IO()
+textOnKey (MavText ptr) fun  =  modifyIORef _textsStore2_ $ (:) (ptr,fun)
 
-windowShow::HWND->IO()
-windowShow hwnd=do
+windowShow::MavWindow->IO()
+windowShow (MavWindow hwnd)=do
   showWindow hwnd sW_SHOWNORMAL
   return()
 
-windowDestroy::HWND->IO() 
-windowDestroy =closeWindow
+windowDestroy::MavWindow->IO() 
+windowDestroy (MavWindow hwnd) =closeWindow hwnd
 
-windowSetText::HWND->ByteString->IO() 
-windowSetText ptr text =  setWindowText ptr $ toStr text
+windowSetText::MavWindow->ByteString->IO() 
+windowSetText (MavWindow hwnd) text =  setWindowText hwnd $ toStr text
 
-windowOnEvent =sciterAttachWindowEventHandler
+windowOnEvent (MavWindow hwnd) =sciterAttachWindowEventHandler hwnd
 
 doublePrefixOf:: ByteString->ByteString->Int->Bool
 doublePrefixOf s elem  n  =
