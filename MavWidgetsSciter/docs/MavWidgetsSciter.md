@@ -35,6 +35,7 @@ message:: String->IO ()
 	      message "data is ready here"
       return False
     return() 	
+_______________________________________________________________________________	
 
 # button 
 button::GuiPtr->String->IO MavButton
@@ -45,13 +46,13 @@ buttontSetText::MavButton>ByteString->IO ()
 
 buttonOnClick:: MavButton>IO ()->IO()
 
-example: 
+<b>example:</b> 
 
-`<input id="buttonAdd" type="button" value="old caption"/>`
+    <input id="buttonAdd" type="button" value="old caption"/>
 
-btAdd<-button root "buttonAdd"
-buttontSetText btAdd "new caption"
-buttonOnClick btAdd $ print $ buttonGetText btAdd
+    btAdd<-button root "buttonAdd"
+    buttontSetText btAdd "new caption"
+    buttonOnClick btAdd $ print $ buttonGetText btAdd
 _______________________________________________________________________________
 
 # checkButton
@@ -65,119 +66,168 @@ checkButtonOnChange:: MavCheck>IO ()->IO()
 _______________________________________________________________________________
 
 # combo
-combo::GuiPtr->String->IO GuiPtr
-comboGetText::GuiPtr->IO ByteString
-comboSetText::GuiPtr->ByteString->IO UINT
-comboGetIndex::GuiPtr->IO Int
-comboSetIndex::GuiPtr->Int->IO ()  
-comboFill::GuiPtr->[ByteString]->IO () 
-comboGetItems::GuiPtr->IO[ByteString]
-comboSearch::GuiPtr->[ByteString]->ByteString->Int->IO()
-comboOnChange:: GuiPtr->IO ()->IO()
+combo::GuiPtr->String->IO MavCombo
 
-example: 
-<select id="comboUsers"></select>
+comboGetText::MavCombo>IO ByteString
 
-cbUsers<-combo root "comboUsers"
-comboFill cbUsers ["Ann","Ivan","Julia"]
-comboSetText  cbUsers "Julia" -- or comboSetIndex  cbUsers 2
-comboOnChange cbUsers $ print $ show $ comboGetIndex cbUsers
+comboSetText::MavCombo>ByteString->IO UINT
+
+comboGetIndex::MavCombo>IO Int
+
+comboSetIndex::MavCombo>Int->IO ()  
+
+comboFill::MavCombo>[ByteString]->IO () 
+
+comboGetItems::MavCombo>IO[ByteString]
+
+comboSearch::MavCombo>[ByteString]->ByteString->Int->IO()
+
+comboOnChange:: MavCombo>IO ()->IO()
+
+<b>example:</b> 
+
+    <select id="comboUsers"></select>
+
+    cbUsers<-combo root "comboUsers"
+    comboFill cbUsers ["Ann","Ivan","Julia"]
+    comboSetText  cbUsers "Julia" -- or comboSetIndex  cbUsers 2
+    comboOnChange cbUsers $ print $ show $ comboGetIndex cbUsers
 _______________________________________________________________________________
 # datePick
-datePick::GuiPtr->String->IO GuiPtr
-datePickGetText::GuiPtr->IO ByteString
-datePickSetText::GuiPtr->ByteString->IO ()
-datePickOnChange:: GuiPtr->IO ()->IO()
+datePick::GuiPtr->String->IO MavDate
 
-example: 
-<input id="curDate" type="date" lang="uk-Ukr" />
+datePickGetText::MavDate>IO ByteString
 
-dt<-datePick root "curDate"
-datePickSetText dt "2019-11-08"
-datePickOnChange $ print $ datePickGetText dt
+datePickSetText::MavDate>ByteString->IO ()
+
+datePickOnChange:: MavDate>IO ()->IO()
+
+
+<b>example:</b>
+ 
+    <input id="curDate" type="date" lang="uk-Ukr" />
+
+    dt<-datePick root "curDate"
+    datePickSetText dt "2019-11-08"
+    datePickOnChange $ print $ datePickGetText dt
 _______________________________________________________________________________
 # flatButton
-flatButton::GuiPtr->String->IO GuiPtr
-flatButtonOnClick:: GuiPtr->IO ()->IO()
+flatButton::GuiPtr->String->IO MavFlatButton
 
-example: 
-<img id="tbFind"src="btFind.png" />
+flatButtonOnClick:: MavFlatButton>IO ()->IO()
 
-tbFind<-flatButton root "tbFind"
-flatButtonOnClick tbFind $ print "clicked"
+<b>example:</b> 
+    <img id="tbFind"src="btFind.png" />
+
+    tbFind<-flatButton root "tbFind"
+    flatButtonOnClick tbFind $ print "clicked"
 _______________________________________________________________________________
 # menuItem
-menuItem::GuiPtr->String->IO GuiPtr
-menuItemOnClick:: GuiPtr->IO ()->IO()
+menuItem::GuiPtr->String->IO MavItem
+
+menuItemOnClick:: MavItem>IO ()->IO()
 _______________________________________________________________________________
 
 # menu
-menu::GuiPtr->String->IO GuiPtr
-menuShow::GuiPtr->GuiPtr->IO ()
+menu::GuiPtr->String->IO MavMenu
+
+menuShow::MavMenu>GuiPtr->IO ()
 _______________________________________________________________________________
 
 # table
-table::GuiPtr->String->IO GuiPtr
-tableGetIndex::GuiPtr->IO Int
-tableSetIndex::GuiPtr->Int->IO()
-tableScroll::GuiPtr->IO()  
-tableScrollTo::GuiPtr->Int->IO()
-tableAddRow::GuiPtr->c->[ c->  ByteString]->IO ()
-tableAddRowM::GuiPtr->c->[ c-> IO ByteString]->IO ()
-tableChangeRow::GuiPtr->c->[ c-> ByteString]->IO ()
-tableChangeRowM::GuiPtr->c->[ c-> IO ByteString]->IO ()
-tableDeleteRow::GuiPtr->IO ()
-tableFill::GuiPtr->[c]->[ c-> ByteString]-> IO UINT
-tableFillM::GuiPtr->[c]->[ c->IO ByteString]-> IO ()
-tableGetRow::GuiPtr->Word32->IO Addr
-tableSetHeaderText::GuiPtr->Int->ByteString->IO()  
-tableSearch::GuiPtr->[ByteString]->ByteString->Int->IO()
-tableOnClick:: GuiPtr->(Int->IO())->IO()
-tableOnDblClick:: GuiPtr->(Int->IO())->IO()
-tableOnMenu:: GuiPtr->(Int->IO())->IO()
+table::GuiPtr->String->IO MavTable
 
-example: 
-<table  border="0" >
-<thead ><tr><th>Id</th><th>Name</th></tr></thead>
-<tbody id="tblUsers" >
-</tbody>
-</table>
+tableGetIndex::MavTable>IO Int
 
-data User=User{userId:: !Int,userName:: !ByteString}
-userStore=[User{userId=1,userName="Ann"},User{userId=2,userName="Ivan"}]
-func=[fromInt.userId,userName]
-tbl<table root "tblUsers"
-tableFill tbl userStore func
-tableSetIndex tbl 1
-tableOnClick tbl $ \n-> print $ "clicked in line "++ show n
+tableSetIndex::MavTable>Int->IO()
+
+tableScroll::MavTable>IO()  
+
+tableScrollTo::MavTable>Int->IO()
+
+tableAddRow::MavTable>c->[ c->  ByteString]->IO ()
+
+tableAddRowM::MavTable>c->[ c-> IO ByteString]->IO ()
+
+tableChangeRow::MavTable>c->[ c-> ByteString]->IO ()
+
+tableChangeRowM::MavTable>c->[ c-> IO ByteString]->IO ()
+
+tableDeleteRow::MavTable>IO ()
+
+tableFill::MavTable>[c]->[ c-> ByteString]-> IO UINT
+
+tableFillM::MavTable>[c]->[ c->IO ByteString]-> IO ()
+
+tableGetRow::MavTable>Word32->IO Addr
+
+tableSetHeaderText::MavTable>Int->ByteString->IO() 
+ 
+tableSearch::MavTable>[ByteString]->ByteString->Int->IO()
+
+tableOnClick:: MavTable>(Int->IO())->IO()
+
+tableOnDblClick:: MavTable>(Int->IO())->IO()
+
+tableOnMenu:: MavTable>(Int->IO())->IO()
+
+<b>example:</b>
+ 
+    <table  border="0" >
+    <thead ><tr><th>Id</th><th>Name</th></tr></thead>
+    <tbody id="tblUsers" >
+    </tbody>
+    </table>
+
+    data User=User{userId:: !Int,userName:: !ByteString}
+    userStore=[User{userId=1,userName="Ann"},User{userId=2,userName="Ivan"}]
+    let func=[fromInt.userId,userName]
+    tbl<table root "tblUsers"
+    tableFill tbl userStore func
+    tableSetIndex tbl 1
+    tableOnClick tbl $ \n-> print $ "clicked in line "++ show n
 _______________________________________________________________________________
 
 # text
-text::GuiPtr->String->IO GuiPtr
-textGetText::GuiPtr->IO ByteString
-textSetText::GuiPtr->ByteString->IO ()
-textSelectAll::GuiPtr->IO()
-textOnChange:: GuiPtr->IO ()->IO()
-textOnKey:: GuiPtr->(Int->IO())->IO()
+text::GuiPtr->String->IO MavText
 
-example:
-<input id="textName" type="text"/>
+textGetText::MavText>IO ByteString
 
-textName<text root "textName"
-textSetText textName "Ann"
-textOnChange textName $ print $textGetText textName
-textOnKey textName $ \n-> when(n==13) $ print "enter pressed"
+textSetText::MavText>ByteString->IO ()
+
+textSelectAll::MavText>IO()
+
+textOnChange:: MavText>IO ()->IO()
+
+textOnKey:: MavText>(Int->IO())->IO()
+
+
+<b>example:</b>
+
+    <input id="textName" type="text"/>
+
+    textName<text root "textName"
+    textSetText textName "Ann"
+    textOnChange textName $ print $textGetText textName
+    textOnKey textName $ \n-> when(n==13) $ print "enter pressed"
 _______________________________________________________________________________
 # window
-windowShow::HWND->IO() 
-windowDestroy::HWND->IO() 
-windowSetText::HWND->ByteString->IO() 
+windowShow::MavWindow>IO() 
+
+windowDestroy::MavWindow>IO() 
+
+windowSetText::MavWindow>ByteString->IO() 
+
 
 # widget
 widgetSetFocus::GuiPtr->IO()
+
 widgetEnable::GuiPtr->IO()
+
 widgetDisable::GuiPtr->IO()
+
 widgetShow::GuiPtr->IO()
+
 widgetHide::GuiPtr->IO()
 _______________________________________________________________________________
 
